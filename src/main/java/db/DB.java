@@ -38,7 +38,8 @@ public class DB {
 	}
 	
 	private static Properties loadProperties() {
-		try (FileInputStream fs = new FileInputStream("db.properties")) {
+		String file = "src/main/resources/db.properties";
+		try (FileInputStream fs = new FileInputStream(file)) {
 			Properties props = new Properties();
 			props.load(fs);
 			return props;
