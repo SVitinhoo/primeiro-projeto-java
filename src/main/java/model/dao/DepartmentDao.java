@@ -4,10 +4,10 @@ import java.util.List;
 
 import model.entites.Department;
 
-public interface DepartmentDAO {
-	void insert(DepartmentDAO obj);
+public interface DepartmentDao {
+	void insert(DepartmentDao obj);
 
-	void update(DepartmentDAO obj);
+	void update(DepartmentDao obj);
 
 	void deleteById(Integer id);
 
