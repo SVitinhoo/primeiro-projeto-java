@@ -1,9 +1,11 @@
 package model.dao.impl;
 
+import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,14 +44,62 @@ public class SellerDaoJDBC implements SellerDao {
 	}
 
 	@Override
-	public void insert(Seller obj) {
-		// TODO Auto-generated method stub
-
+	public void insert(Seller seller) {
+		PreparedStatement st = null;
+		try {
+			st = conn.prepareStatement(
+				"INSERT INTO seller " +
+				"(Name, Email, BirthDate, BaseSalary, DepartmentId) " +
+				"VALUES " +
+				"(?, ?, ?, ?, ?) ", Statement.RETURN_GENERATED_KEYS);
+			st.setString(1, seller.getName());
+			st.setString(2, seller.getEmail());
+			st.setDate(3,  new Date(seller.getBirthDate().getTime()));
+			st.setDouble(4, seller.getBaseSalary());
+			st.setInt(5, seller.getDepartment().getId());
+			int row = st.executeUpdate();
+			if (row > 0) {
+				ResultSet rs = st.getGeneratedKeys();
+				if (rs.next()) {
+					int id = rs.getInt(1);
+					seller.setId(id);
+				}
+				DB.closeResultSet(rs);
+			}
+			else {
+				throw new DbException("Erro, Nenhuma linha foi afetada!");
+			}
+		}
+		catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		}
+		finally {
+			DB.closeStatement(st);
+		}
 	}
 
 	@Override
-	public void update(Seller obj) {
-		// TODO Auto-generated method stub
+	public void update(Seller seller) {
+		PreparedStatement st = null;
+		try {
+			st = conn.prepareStatement(
+					"UPDATE seller " +
+					"SET Name = ?, Email = ?, BirthDate = ?, BaseSalary = ?, DepartmentId = ? " +
+					"WHERE Id = ? ");
+			st.setString(1, seller.getName());
+			st.setString(2, seller.getEmail());
+			st.setDate(3,  new Date(seller.getBirthDate().getTime()));
+			st.setDouble(4, seller.getBaseSalary());
+			st.setInt(5, seller.getDepartment().getId());
+			st.setInt(6, seller.getId());
+			st.executeUpdate();
+		}
+		catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		}
+		finally {
+			DB.closeStatement(st);
+		}
 
 	}
 
@@ -71,7 +121,6 @@ public class SellerDaoJDBC implements SellerDao {
 				"WHERE seller.Id = ?");
 			st.setInt(1, id);
 			rs = st.executeQuery();
-
 			if (rs.next()) {
 				Department tempDp = instantiateDepartment(rs);
 				Seller tempSeller = instantiateSeller(rs, tempDp);
@@ -89,8 +138,35 @@ public class SellerDaoJDBC implements SellerDao {
 
 	@Override
 	public List<Seller> findAll() {
-		// TODO Auto-generated method stub
-		return null;
+		PreparedStatement st = null;
+		ResultSet rs = null;
+		List<Seller> lista = new ArrayList<Seller>();
+		try {
+			st = conn.prepareStatement(
+					"SELECT seller.*,department.Name as DepName " + 
+					"FROM seller INNER JOIN department " + 
+					"ON seller.DepartmentId = department.Id " + 
+					"ORDER BY Name ");
+			rs = st.executeQuery();
+			Map<Integer, Department> map = new HashMap<Integer, Department>();
+			while (rs.next()) {
+				Department dep = map.get(rs.getInt("DepartmentId"));
+				if (dep == null) {
+					dep = instantiateDepartment(rs);
+					map.put(rs.getInt("DepartmentId"), dep);
+				}
+				Seller tempSeller = instantiateSeller(rs, dep);
+				lista.add(tempSeller);
+			}
+			return lista;
+		}
+		catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		}
+		finally {
+			DB.closeStatement(st);
+			DB.closeResultSet(rs);
+		}
 	}
 
 	@Override
@@ -98,7 +174,7 @@ public class SellerDaoJDBC implements SellerDao {
 		PreparedStatement st = null;
 		ResultSet rs = null;
 		List<Seller> lista = new ArrayList<Seller>();
-		Map<Integer, Department> map = new HashMap<Integer, Department>();
+		
 		try {
 			st = conn.prepareStatement(
 					"SELECT seller.*,department.Name as DepName " +
@@ -108,6 +184,7 @@ public class SellerDaoJDBC implements SellerDao {
 					"ORDER BY Name");
 			st.setInt(1, department.getId());
 			rs = st.executeQuery();
+			Map<Integer, Department> map = new HashMap<Integer, Department>();
 			while (rs.next()) {
 				Department dep = map.get(rs.getInt("DepartmentId"));
 				if (dep == null) {
