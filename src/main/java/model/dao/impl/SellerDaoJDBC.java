@@ -92,7 +92,10 @@ public class SellerDaoJDBC implements SellerDao {
 			st.setDouble(4, seller.getBaseSalary());
 			st.setInt(5, seller.getDepartment().getId());
 			st.setInt(6, seller.getId());
-			st.executeUpdate();
+			int row = st.executeUpdate();
+			if (row == 0) {
+				throw new DbException("A atualização falhou, nenhuma linha foi alterada");
+			}
 		}
 		catch (SQLException e) {
 			throw new DbException(e.getMessage());
